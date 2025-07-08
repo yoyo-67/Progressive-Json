@@ -1,0 +1,17 @@
+{
+  "name": "progressive-json-monorepo",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Monorepo for progressive-json and its examples using pnpm workspaces",
+  "workspaces": [
+    "progressive-json",
+    "examples/demo/client",
+    "examples/demo/server"
+  ],
+  "scripts": {
+    "dev:demo:client": "pnpm --filter client --dir examples/demo run dev",
+    "dev:demo:server": "pnpm --filter server --dir examples/demo run dev",
+    "dev:demo": "pnpm run dev:demo:server & pnpm run dev:demo:client",
+    "publish:progressive-json": "cp README.md progressive-json/README.md && cd progressive-json && npm publish"
+  }
+}

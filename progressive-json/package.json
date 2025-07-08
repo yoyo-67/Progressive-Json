@@ -1,0 +1,50 @@
+{
+  "name": "@yoyo-org/progressive-json",
+  "version": "0.0.4",
+  "description": "Stream and render JSON data as it arrives - perfect for AI responses, large datasets, and real-time updates",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepublishOnly": "npm run build",
+    "test": "vitest"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "progressive",
+    "json",
+    "streaming",
+    "react",
+    "hooks",
+    "real-time",
+    "ai",
+    "chat",
+    "typescript",
+    "websocket",
+    "sse",
+    "streaming-json",
+    "incremental-loading"
+  ],
+  "author": "yoyo",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yoyo-67/progressive-json.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yoyo-67/progressive-json/issues"
+  },
+  "homepage": "https://github.com/yoyo-67/progressive-json#readme",
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  },
+  "peerDependencies": {
+    "react": ">=16.8.0"
+  }
+}

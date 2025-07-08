@@ -1,0 +1,4 @@
+packages:
+  - 'progressive-json'
+  - 'examples/demo/client'
+  - 'examples/demo/server' 
