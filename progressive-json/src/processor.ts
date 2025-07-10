@@ -5,8 +5,13 @@ import type {
   PlaceholderStore,
 } from "./resolve-placeholder";
 import { filterPlaceholders } from "./utils/filter-placeholders";
-import { findPlaceholders, RefPathMap, PlaceholderPath } from "./utils/find-placeholders";
+import {
+  findPlaceholders,
+  RefPathMap,
+  PlaceholderPath,
+} from "./utils/find-placeholders";
 import { isPlaceholder } from "./utils/is-placeholder";
+import { produce } from "immer";
 
 export class Processor<T extends PlaceholderStore = PlaceholderStore> {
   private store: T | undefined;
@@ -51,7 +56,6 @@ export class Processor<T extends PlaceholderStore = PlaceholderStore> {
       }
 
       this.store = this.handleStreamLine(line, this.store);
-      this.store = { ...this.store };
       this.notifyListeners();
     }
   }
@@ -78,90 +82,113 @@ export class Processor<T extends PlaceholderStore = PlaceholderStore> {
     });
   }
 
-  private updateStoreAtPath(store: T, path: PlaceholderPath, value: unknown) {
-    let obj: unknown = store;
-    for (let i = 0; i < path.length - 1; i++) {
-      if (typeof obj === "object" && obj !== null) {
-        obj = (obj as Record<string, unknown>)[path[i]];
+  private updateAtPath(
+    store: T,
+    key: string,
+    updater: (
+      obj: Record<string | number, unknown>,
+      lastKey: string | number,
+    ) => void,
+  ): T {
+    const refKey = this.normalizeRefKey(key);
+    const refId = this.getRefIdFromKey(refKey);
+    if (refId == null) return store;
+
+    const path = this.refStore[refId];
+    if (!path) return store;
+
+    return produce(store, (draft) => {
+      let obj: unknown = draft;
+      for (let i = 0; i < path.length - 1; i++) {
+        if (typeof obj === "object" && obj !== null) {
+          obj = (obj as Record<string | number, unknown>)[path[i]];
+        }
       }
-    }
-    if (typeof obj === "object" && obj !== null) {
-      (obj as Record<string, unknown>)[path[path.length - 1]] = value;
-    }
+
+      const lastKey = path[path.length - 1];
+      if (typeof obj === "object" && obj !== null) {
+        updater(obj as Record<string | number, unknown>, lastKey);
+      }
+    });
+  }
+
+  private applyPushUpdate(store: T, key: string, value: unknown): T {
+    return this.updateAtPath(store, key, (obj, lastKey) => {
+      if (!Array.isArray(obj[lastKey])) obj[lastKey] = [];
+      (obj[lastKey] as unknown[]).push(value);
+    });
+  }
+
+  private applyConcatUpdate(store: T, key: string, value: unknown[]): T {
+    return this.updateAtPath(store, key, (obj, lastKey) => {
+      if (!Array.isArray(obj[lastKey])) obj[lastKey] = [];
+      (obj[lastKey] as unknown[]).push(...value);
+    });
   }
 
   private applyRefUpdate(store: T, key: string, value: unknown): T {
-    const refKey = this.normalizeRefKey(key);
-    const refId = this.getRefIdFromKey(refKey);
-    if (refId == null) return store;
-
-    const path = this.refStore[refId];
-    if (!path) return store;
-
-    this.updateStoreAtPath(store, path, value);
-    this.updateRefStore(store);
-    return store;
+    const updatedStore = this.updateAtPath(store, key, (obj, lastKey) => {
+      obj[lastKey] = value;
+    });
+    this.updateRefStore(updatedStore);
+    return updatedStore;
   }
 
   private applyStreamUpdate(store: T, key: string, value: string): T {
-    const refKey = this.normalizeRefKey(key);
-    const refId = this.getRefIdFromKey(refKey);
-    if (refId == null) return store;
-
-    const path = this.refStore[refId];
-    if (!path) return store;
-
-    let obj: unknown = store;
-    for (let i = 0; i < path.length - 1; i++) {
-      if (typeof obj === "object" && obj !== null) {
-        obj = (obj as Record<string, unknown>)[path[i]];
-      }
-    }
-
-    const lastKey = path[path.length - 1];
-    if (typeof obj === "object" && obj !== null) {
-      const record = obj as Record<string, unknown>;
-      if (typeof record[lastKey] === "string" && isPlaceholder(record[lastKey] as string)) {
-        record[lastKey] = value;
+    return this.updateAtPath(store, key, (obj, lastKey) => {
+      if (
+        typeof obj[lastKey] === "string" &&
+        isPlaceholder(obj[lastKey] as string)
+      ) {
+        obj[lastKey] = value;
       } else {
-        record[lastKey] = ((record[lastKey] ?? "") as string) + value;
+        obj[lastKey] = ((obj[lastKey] ?? "") as string) + value;
       }
-    }
-
-    return store;
+    });
   }
 
   private handleStreamLine(line: string, currentStore: T): T {
     if (!line.trim()) return currentStore;
-
     const { onMessage } = this.options;
-
+    let updatedStore = currentStore;
     try {
       const msg: ProgressiveChunkMessage = JSON.parse(line);
-      let updatedStore = currentStore;
-
       switch (msg.type) {
         case "init":
-          updatedStore = msg.data as T;
-          this.updateRefStore(updatedStore);
+          updatedStore = this.handleInit(msg.data as T);
           break;
-
         case "ref":
           updatedStore = this.applyRefUpdate(updatedStore, msg.key, msg.value);
           break;
-
         case "stream":
-          updatedStore = this.applyStreamUpdate(updatedStore, msg.key, String(msg.value));
+          updatedStore = this.applyStreamUpdate(
+            updatedStore,
+            msg.key,
+            String(msg.value),
+          );
+          break;
+        case "push":
+          updatedStore = this.applyPushUpdate(updatedStore, msg.key, msg.value);
+          break;
+        case "concat":
+          updatedStore = this.applyConcatUpdate(
+            updatedStore,
+            msg.key,
+            msg.value as unknown[],
+          );
           break;
       }
-
       if (onMessage) {
         onMessage(filterPlaceholders(updatedStore));
       }
-
       return updatedStore;
     } catch {
       return currentStore;
     }
+  }
+
+  private handleInit(data: T): T {
+    this.updateRefStore(data);
+    return data;
   }
 }

@@ -11,7 +11,7 @@ export function filterPlaceholders<T = unknown>(value: T): T {
   }
 
   if (Array.isArray(value)) {
-    return value.map(filterPlaceholders) as T;
+    return value.map(filterPlaceholders).filter(Boolean) as T;
   }
 
   // Handle ref objects (placeholder objects)
@@ -25,7 +25,9 @@ export function filterPlaceholders<T = unknown>(value: T): T {
 
   const result: Record<string, unknown> = {};
   for (const key in value as Record<string, unknown>) {
-    const filtered = filterPlaceholders((value as Record<string, unknown>)[key]);
+    const filtered = filterPlaceholders(
+      (value as Record<string, unknown>)[key],
+    );
     if (filtered !== null) {
       result[key] = filtered;
     }

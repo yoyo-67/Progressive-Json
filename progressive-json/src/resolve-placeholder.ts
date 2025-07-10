@@ -1,7 +1,9 @@
 export type ProgressiveChunkMessage =
   | { type: "init"; data: unknown }
   | { type: "ref"; key: string; value: unknown }
-  | { type: "stream"; key: string; value: unknown };
+  | { type: "stream"; key: string; value: unknown }
+  | { type: "push"; key: string; value: unknown }
+  | { type: "concat"; key: string; value: unknown };
 
 interface ProgressiveChunkOptions {
   validateReferences?: boolean;

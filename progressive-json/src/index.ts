@@ -5,5 +5,6 @@ export * from "./resolve-placeholder";
 export * from "./utils/assert";
 export * from "./utils/extract-placeholder-id";
 export * from "./utils/filter-placeholders";
+export * from "./utils/find-placeholders";
 export * from "./utils/is-placeholder";
 export * from "./utils/server";

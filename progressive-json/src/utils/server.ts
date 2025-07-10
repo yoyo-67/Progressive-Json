@@ -1,6 +1,6 @@
 export type Placeholder<T = unknown> =
   | {
-      type: "ref" | "stream";
+      type: "ref" | "stream" | "push" | "concat";
       key: `ref$${number}`;
       value: T;
     }
@@ -19,6 +19,14 @@ export function ref<T = unknown>(key: `ref$${number}`, value: T): Placeholder<T>
 
 export function stream<T = unknown>(key: `ref$${number}`, value: T): Placeholder<T> {
   return { type: "stream", key, value };
+}
+
+export function push<T = unknown>(key: `ref$${number}`, value: T): Placeholder<T> {
+  return { type: "push", key, value };
+}
+
+export function concat<T = unknown>(key: `ref$${number}`, value: T[]): Placeholder<T[]> {
+  return { type: "concat", key, value };
 }
 
 let refKeyCounter = 1;
