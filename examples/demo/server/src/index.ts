@@ -6,7 +6,7 @@ import {
   writeChunkHeaders,
   init,
   ref,
-  stream,
+  push,
   generateRefKey,
   resetRefKeyCounter,
 } from "@yoyo-org/progressive-json";
@@ -29,7 +29,7 @@ app.get("/api/progressive-chunk", async (req, res) => {
   const postsRef = generateRefKey();
   const notificationsRef = generateRefKey();
   const thirdPostRef = generateRefKey();
-  const heyRef = generateRefKey();
+  const itemsRef = generateRefKey();
 
   writer(
     init({
@@ -37,7 +37,7 @@ app.get("/api/progressive-chunk", async (req, res) => {
       posts: postsRef,
       config: { theme: "dark", notifications: notificationsRef },
       staticData: "Loaded!",
-    })
+    }),
   );
   await wait(150);
 
@@ -52,8 +52,9 @@ app.get("/api/progressive-chunk", async (req, res) => {
       { id: 1, title: "First Post", content: "Hello world!" },
       { id: 2, title: "Second Post", content: "Another post." },
       thirdPostRef,
-    ])
+    ]),
   );
+
   await wait(150);
 
   writer(ref(notificationsRef, true));
@@ -64,19 +65,50 @@ app.get("/api/progressive-chunk", async (req, res) => {
       id: 3,
       title: "Third Post",
       content: "More content here.",
-      hey: heyRef,
-    })
+      items: itemsRef,
+    }),
   );
   await wait(50);
 
-  const words =
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.".split(
-      " "
-    );
   for (let i = 0; i < 10; i++) {
-    await wait(100);
-    let buffer = `${words[i % words.length]} `;
-    writer(stream(heyRef, buffer));
+    await wait(500);
+    const newItem = {
+      id: i,
+      text: `Item ${i}`,
+      timestamp: Date.now(),
+      status: i % 2 === 0 ? "active" : "pending",
+    };
+    writer(push(itemsRef, newItem));
+  }
+
+  res.end();
+});
+
+app.get("/api/stream-items", async (req, res) => {
+  writeChunkHeaders(res);
+  const writer = writeln(res);
+  resetRefKeyCounter();
+
+  const itemsRef = generateRefKey();
+
+  // Initialize with empty array
+  writer(init({ items: itemsRef }));
+  await wait(100);
+
+  // Start with empty array
+  writer(ref(itemsRef, []));
+  await wait(100);
+
+  // Stream new items one by one
+  for (let i = 0; i < 10; i++) {
+    await wait(500);
+    const newItem = {
+      id: i,
+      text: `Item ${i}`,
+      timestamp: Date.now(),
+      status: i % 2 === 0 ? "active" : "pending",
+    };
+    writer(push(itemsRef, newItem));
   }
 
   res.end();
