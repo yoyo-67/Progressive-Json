@@ -22,7 +22,7 @@ export function writeChunkHeaders(res: Response) {
 
 export type Placeholder =
   | {
-      type: "ref" | "stream";
+      type: "value" | "text";
       key: `ref$${number}`;
       value: any;
     }
@@ -35,12 +35,12 @@ export function init(data: Record<string, any>): Placeholder {
   return { type: "init", data };
 }
 
-export function ref(key: `ref$${number}`, value: any): Placeholder {
-  return { type: "ref", key, value };
+export function value(key: `ref$${number}`, value: any): Placeholder {
+  return { type: "value", key, value };
 }
 
-export function stream(key: `ref$${number}`, value: any): Placeholder {
-  return { type: "stream", key, value };
+export function text(key: `ref$${number}`, value: any): Placeholder {
+  return { type: "text", key, value };
 }
 
 let refKeyCounter = 1;

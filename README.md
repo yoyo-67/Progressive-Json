@@ -28,6 +28,47 @@ The server sends JSON in progressive chunks, and your app processes each piece i
 - **🚀 Lightweight** - Zero dependencies, minimal bundle
 - **🔄 Universal** - Works with any streaming endpoint
 
+## API
+
+The library provides five core functions for building progressive JSON responses:
+
+### `init(data)`
+Initialize the JSON structure with placeholders for dynamic content.
+```ts
+init({
+  user: { name: userNameRef, age: 30 },
+  posts: postsRef,
+  staticData: "Loaded!"
+})
+```
+
+### `value(key, value)`
+Replace a placeholder with its final value.
+```ts
+value(userNameRef, "Alice")
+value(postsRef, [{ id: 1, title: "First Post" }])
+```
+
+### `text(key, value)`
+Append content to a streaming field (updates in real-time).
+```ts
+text(logRef, "New message ")
+text(logRef, "arrived!")
+```
+
+### `push(key, value)`
+Add items to an array field.
+```ts
+push(notificationsRef, { id: 1, message: "New notification" })
+push(notificationsRef, { id: 2, message: "Another notification" })
+```
+
+### `concat(key, values)`
+Replace an array field with new values.
+```ts
+concat(usersRef, [{ id: 1, name: "Alice" }, { id: 2, name: "Bob" }])
+```
+
 ## Quick Start
 
 ### Install
@@ -45,8 +86,8 @@ import {
   writeln,
   writeChunkHeaders,
   init,
-  ref,
-  stream,
+  value,
+  text,
   generateRefKey,
   resetRefKeyCounter,
 } from "@yoyo-org/progressive-json";
@@ -76,10 +117,10 @@ app.get("/api/progressive-chunk", async (req, res) => {
   await new Promise(r => setTimeout(r, 150));
 
   // Send referenced values
-  writer(ref(userNameRef, "Alice"));
+  writer(value(userNameRef, "Alice"));
   await new Promise(r => setTimeout(r, 150));
 
-  writer(ref(postsRef, [
+  writer(value(postsRef, [
     { id: 1, title: "First Post", content: "Hello world!" },
     { id: 2, title: "Second Post", content: "Another post." }
   ]));
@@ -89,7 +130,7 @@ app.get("/api/progressive-chunk", async (req, res) => {
   const words = "Streaming updates as they arrive!".split(" ");
   for (const word of words) {
     await new Promise(r => setTimeout(r, 200));
-    writer(stream(logRef, word + " "));
+    writer(text(logRef, word + " "));
   }
 
   res.end();

@@ -5,7 +5,7 @@ import {
   writeln,
   writeChunkHeaders,
   init,
-  ref,
+  value,
   push,
   generateRefKey,
   resetRefKeyCounter,
@@ -37,36 +37,36 @@ app.get("/api/progressive-chunk", async (req, res) => {
       posts: postsRef,
       config: { theme: "dark", notifications: notificationsRef },
       staticData: "Loaded!",
-    }),
+    })
   );
   await wait(150);
 
-  writer(ref(userNameRef, "Alice"));
+  writer(value(userNameRef, "Alice"));
   await wait(150);
 
-  writer(ref(userAvatarRef, "https://example.com/avatar.png"));
+  writer(value(userAvatarRef, "https://example.com/avatar.png"));
   await wait(450);
 
   writer(
-    ref(postsRef, [
+    value(postsRef, [
       { id: 1, title: "First Post", content: "Hello world!" },
       { id: 2, title: "Second Post", content: "Another post." },
       thirdPostRef,
-    ]),
+    ])
   );
 
   await wait(150);
 
-  writer(ref(notificationsRef, true));
+  writer(value(notificationsRef, true));
   await wait(100);
 
   writer(
-    ref(thirdPostRef, {
+    value(thirdPostRef, {
       id: 3,
       title: "Third Post",
       content: "More content here.",
       items: itemsRef,
-    }),
+    })
   );
   await wait(50);
 
@@ -96,7 +96,7 @@ app.get("/api/stream-items", async (req, res) => {
   await wait(100);
 
   // Start with empty array
-  writer(ref(itemsRef, []));
+  writer(value(itemsRef, []));
   await wait(100);
 
   // Stream new items one by one

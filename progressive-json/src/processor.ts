@@ -5,11 +5,7 @@ import type {
   PlaceholderStore,
 } from "./resolve-placeholder";
 import { filterPlaceholders } from "./utils/filter-placeholders";
-import {
-  findPlaceholders,
-  RefPathMap,
-  PlaceholderPath,
-} from "./utils/find-placeholders";
+import { findPlaceholders, RefPathMap, PlaceholderPath } from "./utils/find-placeholders";
 import { isPlaceholder } from "./utils/is-placeholder";
 import { produce } from "immer";
 
@@ -85,10 +81,7 @@ export class Processor<T extends PlaceholderStore = PlaceholderStore> {
   private updateAtPath(
     store: T,
     key: string,
-    updater: (
-      obj: Record<string | number, unknown>,
-      lastKey: string | number,
-    ) => void,
+    updater: (obj: Record<string | number, unknown>, lastKey: string | number) => void
   ): T {
     const refKey = this.normalizeRefKey(key);
     const refId = this.getRefIdFromKey(refKey);
@@ -136,10 +129,7 @@ export class Processor<T extends PlaceholderStore = PlaceholderStore> {
 
   private applyStreamUpdate(store: T, key: string, value: string): T {
     return this.updateAtPath(store, key, (obj, lastKey) => {
-      if (
-        typeof obj[lastKey] === "string" &&
-        isPlaceholder(obj[lastKey] as string)
-      ) {
+      if (typeof obj[lastKey] === "string" && isPlaceholder(obj[lastKey] as string)) {
         obj[lastKey] = value;
       } else {
         obj[lastKey] = ((obj[lastKey] ?? "") as string) + value;
@@ -157,25 +147,17 @@ export class Processor<T extends PlaceholderStore = PlaceholderStore> {
         case "init":
           updatedStore = this.handleInit(msg.data as T);
           break;
-        case "ref":
+        case "value":
           updatedStore = this.applyRefUpdate(updatedStore, msg.key, msg.value);
           break;
-        case "stream":
-          updatedStore = this.applyStreamUpdate(
-            updatedStore,
-            msg.key,
-            String(msg.value),
-          );
+        case "text":
+          updatedStore = this.applyStreamUpdate(updatedStore, msg.key, String(msg.value));
           break;
         case "push":
           updatedStore = this.applyPushUpdate(updatedStore, msg.key, msg.value);
           break;
         case "concat":
-          updatedStore = this.applyConcatUpdate(
-            updatedStore,
-            msg.key,
-            msg.value as unknown[],
-          );
+          updatedStore = this.applyConcatUpdate(updatedStore, msg.key, msg.value as unknown[]);
           break;
       }
       if (onMessage) {
