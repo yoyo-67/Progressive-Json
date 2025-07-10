@@ -7,11 +7,6 @@ export async function fetchJson<T extends PlaceholderStore>(
   processor: Processor<T>,
 ) {
   const response = await fetch(url);
-  console.log(
-    "🚀 - DEBUGPRINT [2080]: fetch-json.ts:9: response=",
-    response,
-    "\nEND",
-  );
   assert(response.ok, `Failed to fetch from ${url}: ${response.statusText}`);
   assert(response.body, "No response body received");
   const reader = response.body.getReader();

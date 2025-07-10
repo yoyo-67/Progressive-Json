@@ -40,6 +40,7 @@ npm install @yoyo-org/progressive-json
 
 ```ts
 import express from "express";
+import cors from "cors";
 import {
   writeln,
   writeChunkHeaders,
@@ -51,6 +52,8 @@ import {
 } from "@yoyo-org/progressive-json";
 
 const app = express();
+app.use(cors());
+
 app.get("/api/progressive-chunk", async (req, res) => {
   writeChunkHeaders(res);
   const writer = writeln(res);
@@ -129,7 +132,7 @@ You can expand on this with more fields, references, and streaming updates as sh
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT License - see [LICENSE](./progressive-json/LICENSE) for details.
 
 ---
 
