@@ -8,9 +8,9 @@
 
 ## The Problem
 
-Waiting for complete JSON responses creates slow, unresponsive experiences. Users see blank screens while large datasets load, and memory usage spikes as entire payloads are held in memory.
+Waiting for complete JSON responses creates slow, unresponsive experiences. Users see blank screens while large datasets load.
 
-**progressive-json** streams JSON data chunk by chunk, updating your UI as each piece arrives.
+**progressive-json** streams JSON data chunk by chunk, updating your client as each piece arrives.
 
 
 ## How It Works
@@ -25,7 +25,6 @@ The server sends JSON in progressive chunks, and your app processes each piece i
 - **🎯 Smart References** - Handle complex nested data seamlessly  
 - **⚛️ React Ready** - Simple `useProgressiveJson` hook
 - **🛡️ TypeScript** - Full type safety included
-- **🚀 Lightweight** - Zero dependencies, minimal bundle
 - **🔄 Universal** - Works with any streaming endpoint
 
 ## API
@@ -42,29 +41,29 @@ init({
 })
 ```
 
-### `value(key, value)`
-Replace a placeholder with its final value.
+### `value(ref, value)`
+Replace a placeholder with its value.
 ```ts
 value(userNameRef, "Alice")
 value(postsRef, [{ id: 1, title: "First Post" }])
 ```
 
-### `text(key, value)`
-Append content to a streaming field (updates in real-time).
+### `text(ref, value)`
+stream texts to placeholder .
 ```ts
 text(logRef, "New message ")
 text(logRef, "arrived!")
 ```
 
-### `push(key, value)`
-Add items to an array field.
+### `push(ref, value)`
+push item to an array field.
 ```ts
 push(notificationsRef, { id: 1, message: "New notification" })
 push(notificationsRef, { id: 2, message: "Another notification" })
 ```
 
-### `concat(key, values)`
-Replace an array field with new values.
+### `concat(ref, values)`
+push many items to an array field.
 ```ts
 concat(usersRef, [{ id: 1, name: "Alice" }, { id: 2, name: "Bob" }])
 ```
