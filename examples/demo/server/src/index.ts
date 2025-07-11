@@ -1,4 +1,4 @@
-import express, { type Response } from "express";
+import express from "express";
 import http from "http";
 import cors from "cors";
 import {
@@ -9,6 +9,7 @@ import {
   push,
   generateRefKey,
   resetRefKeyCounter,
+  concat,
 } from "@yoyo-org/progressive-json";
 
 function wait(ms: number) {
@@ -37,7 +38,7 @@ app.get("/api/progressive-chunk", async (req, res) => {
       posts: postsRef,
       config: { theme: "dark", notifications: notificationsRef },
       staticData: "Loaded!",
-    })
+    }),
   );
   await wait(150);
 
@@ -52,7 +53,7 @@ app.get("/api/progressive-chunk", async (req, res) => {
       { id: 1, title: "First Post", content: "Hello world!" },
       { id: 2, title: "Second Post", content: "Another post." },
       thirdPostRef,
-    ])
+    ]),
   );
 
   await wait(150);
@@ -66,11 +67,11 @@ app.get("/api/progressive-chunk", async (req, res) => {
       title: "Third Post",
       content: "More content here.",
       items: itemsRef,
-    })
+    }),
   );
   await wait(50);
 
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 4; i++) {
     await wait(500);
     const newItem = {
       id: i,
@@ -81,35 +82,22 @@ app.get("/api/progressive-chunk", async (req, res) => {
     writer(push(itemsRef, newItem));
   }
 
-  res.end();
-});
-
-app.get("/api/stream-items", async (req, res) => {
-  writeChunkHeaders(res);
-  const writer = writeln(res);
-  resetRefKeyCounter();
-
-  const itemsRef = generateRefKey();
-
-  // Initialize with empty array
-  writer(init({ items: itemsRef }));
   await wait(100);
-
-  // Start with empty array
-  writer(value(itemsRef, []));
-  await wait(100);
-
-  // Stream new items one by one
-  for (let i = 0; i < 10; i++) {
-    await wait(500);
-    const newItem = {
+  function createNewItem(i: number) {
+    return {
       id: i,
       text: `Item ${i}`,
       timestamp: Date.now(),
       status: i % 2 === 0 ? "active" : "pending",
     };
-    writer(push(itemsRef, newItem));
   }
+
+  writer(
+    concat(
+      itemsRef,
+      Array.from({ length: 4 }, (_, i) => createNewItem(i + 4)),
+    ),
+  );
 
   res.end();
 });
