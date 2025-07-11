@@ -8,3 +8,4 @@ export * from "./utils/filter-placeholders";
 export * from "./utils/find-placeholders";
 export * from "./utils/is-placeholder";
 export * from "./utils/server";
+export * from "./plugins";

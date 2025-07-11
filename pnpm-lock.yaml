@@ -111,6 +111,9 @@ importers:
       ts-node-dev:
         specifier: ^2.0.0
         version: 2.0.0(@types/node@24.0.12)(typescript@5.8.3)
+      tsx:
+        specifier: ^4.19.2
+        version: 4.20.3
       typescript:
         specifier: ^5.8.3
         version: 5.8.3

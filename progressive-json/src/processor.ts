@@ -3,6 +3,8 @@ import type {
   ProgressiveChunkMessage,
   StreamProcessorOptions,
   PlaceholderStore,
+  Plugin,
+  PluginContext,
 } from "./resolve-placeholder";
 import { filterPlaceholders } from "./utils/filter-placeholders";
 import { findPlaceholders, RefPathMap, PlaceholderPath } from "./utils/find-placeholders";
@@ -15,10 +17,12 @@ export class Processor<T extends PlaceholderStore = PlaceholderStore> {
   private decoder = new TextDecoder();
   private listeners: Array<() => void> = [];
   private refStore: RefPathMap = {};
+  private plugins: Plugin<any, any>[] = [];
 
   constructor(options: StreamProcessorOptions<T>) {
     this.options = options;
     this.store = options.initialStore;
+    this.plugins = options.plugins || [];
 
     if (this.store) {
       this.updateRefStore(this.store);
@@ -62,11 +66,11 @@ export class Processor<T extends PlaceholderStore = PlaceholderStore> {
     this.listeners.forEach((listener) => listener());
   }
 
-  private normalizeRefKey(key: string): string {
+  normalizeRefKey(key: string): string {
     return key.startsWith("ref") ? key : `ref${key}`;
   }
 
-  private getRefIdFromKey(refKey: string): number | null {
+  getRefIdFromKey(refKey: string): number | null {
     const match = refKey.match(/^ref\$(\d+)$/);
     return match ? Number(match[1]) : null;
   }
@@ -78,7 +82,7 @@ export class Processor<T extends PlaceholderStore = PlaceholderStore> {
     });
   }
 
-  private updateAtPath(
+  updateAtPath(
     store: T,
     key: string,
     updater: (obj: Record<string | number, unknown>, lastKey: string | number) => void
@@ -143,23 +147,39 @@ export class Processor<T extends PlaceholderStore = PlaceholderStore> {
     let updatedStore = currentStore;
     try {
       const msg: ProgressiveChunkMessage = JSON.parse(line);
-      switch (msg.type) {
-        case "init":
-          updatedStore = this.handleInit(msg.data as T);
-          break;
-        case "value":
-          updatedStore = this.applyRefUpdate(updatedStore, msg.key, msg.value);
-          break;
-        case "text":
-          updatedStore = this.applyStreamUpdate(updatedStore, msg.key, String(msg.value));
-          break;
-        case "push":
-          updatedStore = this.applyPushUpdate(updatedStore, msg.key, msg.value);
-          break;
-        case "concat":
-          updatedStore = this.applyConcatUpdate(updatedStore, msg.key, msg.value as unknown[]);
-          break;
+
+      // Find a plugin whose type matches the message type
+      const plugin = this.plugins.find((p) => p.type === msg.type);
+      if (plugin) {
+        const context: PluginContext<any> = {
+          updateAtPath: this.updateAtPath.bind(this),
+          normalizeRefKey: this.normalizeRefKey.bind(this),
+          getRefIdFromKey: this.getRefIdFromKey.bind(this),
+          refStore: this.refStore,
+        };
+        // Type-safe dispatch: cast msg to the plugin's message type
+        updatedStore = (plugin.handleMessage as any)(msg, currentStore, context) as T;
+      } else {
+        // Handle built-in message types
+        switch (msg.type) {
+          case "init":
+            updatedStore = this.handleInit(msg.data as T);
+            break;
+          case "value":
+            updatedStore = this.applyRefUpdate(updatedStore, msg.key, msg.value);
+            break;
+          case "text":
+            updatedStore = this.applyStreamUpdate(updatedStore, msg.key, String(msg.value));
+            break;
+          case "push":
+            updatedStore = this.applyPushUpdate(updatedStore, msg.key, msg.value);
+            break;
+          case "concat":
+            updatedStore = this.applyConcatUpdate(updatedStore, msg.key, msg.value as unknown[]);
+            break;
+        }
       }
+
       if (onMessage) {
         onMessage(filterPlaceholders(updatedStore));
       }

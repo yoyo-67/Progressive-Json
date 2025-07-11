@@ -26,6 +26,7 @@ The server sends JSON in progressive chunks, and your app processes each piece i
 - **⚛️ React Ready** - Simple `useProgressiveJson` hook
 - **🛡️ TypeScript** - Full type safety included
 - **🔄 Universal** - Works with any streaming endpoint
+- **🔌 Plugin System** - Extend functionality with custom message types
 
 ## API
 
@@ -66,6 +67,46 @@ push(notificationsRef, { id: 2, message: "Another notification" })
 push many items to an array field.
 ```ts
 concat(usersRef, [{ id: 1, name: "Alice" }, { id: 2, name: "Bob" }])
+```
+
+### Plugin System
+Extend functionality with custom message types and full type safety. See [PLUGINS.md](./progressive-json/PLUGINS.md) for details.
+
+
+**Type-safe plugins with two generics:**
+```tsx
+interface Plugin<TMessage, TStore> {
+  handleMessage: (message: TMessage, store: TStore, context: PluginContext<TStore>) => TStore;
+}
+```
+
+## How to Create a Plugin
+
+You can extend progressive-json with your own message types and behaviors using the plugin system. Plugins are objects with a `type` and a `handleMessage` function. You can use TypeScript generics for full type safety.
+
+### Basic Plugin Example
+```ts
+import type { Plugin } from "@yoyo-org/progressive-json";
+
+const myPlugin: Plugin = {
+  type: "my-type",
+  handleMessage: (message, store, context) => {
+    return context.updateAtPath(store, message.key, (obj, lastKey) => {
+      obj[lastKey] = message.value;
+    });
+  },
+};
+```
+
+- Register your plugin in the client:
+
+```ts
+import { useProgressiveJson } from "@yoyo-org/progressive-json";
+
+const { store } = useProgressiveJson({
+  url: "...",
+  plugins: [myPlugin],
+});
 ```
 
 ## Quick Start

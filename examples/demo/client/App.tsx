@@ -1,8 +1,13 @@
-import { useProgressiveJson } from "@yoyo-org/progressive-json";
+import {
+  incrementPlugin,
+  mergePlugin,
+  useProgressiveJson,
+} from "@yoyo-org/progressive-json";
 
 export function ProgressiveChunkDemo() {
   const { store } = useProgressiveJson<ProgressiveData>({
     url: "http://localhost:3001/api/progressive-chunk",
+    plugins: [mergePlugin, incrementPlugin],
   });
 
   if (!store) {
