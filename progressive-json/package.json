@@ -5,10 +5,12 @@
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && npm run minify",
+    "minify": "terser dist/src/index.js -o dist/src/index.min.js --compress --mangle",
     "prepublishOnly": "npm run build",
     "test": "vitest"
   },
@@ -41,6 +43,7 @@
   },
   "homepage": "https://github.com/yoyo-67/progressive-json#readme",
   "devDependencies": {
+    "terser": "^5.43.1",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
   },

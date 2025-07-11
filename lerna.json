@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/lerna/schemas/lerna-schema.json",
+  "version": "independent",
+  "npmClient": "pnpm",
+  "command": {
+    "publish": {
+      "conventionalCommits": true,
+      "message": "chore(release): publish",
+      "registry": "https://registry.npmjs.org/",
+      "yes": true,
+      "preview": false,
+      "dist-tag": "latest"
+    },
+    "version": {
+      "conventionalCommits": true,
+      "message": "chore(release): version packages",
+      "yes": true,
+      "preview": false
+    }
+  },
+  "packages": ["progressive-json"]
+}
