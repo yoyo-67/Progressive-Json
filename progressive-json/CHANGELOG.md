@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.3.0](https://github.com/yoyo-67/progressive-json/compare/@yoyo-org/progressive-json@0.2.0...@yoyo-org/progressive-json@0.3.0) (2025-07-11)
+
+
+### Features
+
+* **plugins:** add plugins system ([31ec249](https://github.com/yoyo-67/progressive-json/commit/31ec249f0b3aa068016ca467ca90b07f9c847ee6))
+
+
+
+
+
 # 0.2.0 (2025-07-11)
 
 
