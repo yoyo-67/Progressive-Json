@@ -76,6 +76,8 @@ concat(usersRef, [{ id: 1, name: "Alice" }, { id: 2, name: "Bob" }])
 npm install @yoyo-org/progressive-json
 ```
 
+> **Note**: The package is automatically minified during build for optimal bundle size.
+
 ### 1. Minimal Server Example (Express, with Streaming)
 
 ```ts

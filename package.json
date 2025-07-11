@@ -12,6 +12,16 @@
     "dev:demo:client": "pnpm --filter client --dir examples/demo run dev",
     "dev:demo:server": "pnpm --filter server --dir examples/demo run dev",
     "dev:demo": "pnpm run dev:demo:server & pnpm run dev:demo:client",
-    "publish:progressive-json": "cp README.md progressive-json/README.md && cd progressive-json && npm publish"
+    "build": "pnpm --filter @yoyo-org/progressive-json run build",
+    "version": "lerna version --conventional-commits",
+    "version:manual": "./scripts/version.sh",
+    "publish": "lerna publish from-git --yes",
+    "publish:auto": "lerna publish --yes",
+    "publish:progressive-json": "./scripts/publish.sh",
+    "publish:progressive-json:dry-run": "./scripts/publish-dry-run.sh"
+  },
+  "devDependencies": {
+    "conventional-changelog-conventionalcommits": "^7.0.2",
+    "lerna": "^8.1.2"
   }
 }

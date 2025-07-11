@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/lerna/schemas/lerna-schema.json",
+  "version": "independent",
+  "npmClient": "pnpm",
+  "command": {
+    "publish": {
+      "conventionalCommits": true,
+      "changelogPreset": "conventional-changelog-conventionalcommits",
+      "registry": "https://registry.npmjs.org/",
+      "access": "public"
+    },
+    "version": {
+      "conventionalCommits": true,
+      "changelogPreset": "conventional-changelog-conventionalcommits"
+    }
+  },
+  "packages": ["progressive-json"]
+}
