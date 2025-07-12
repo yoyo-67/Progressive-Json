@@ -18,11 +18,6 @@ function custom(key: string, value: string, metadata?: { timestamp: string }) {
   return { type: "custom", key, value, metadata };
 }
 
-// Create a custom writer that can handle plugin message types
-function writePluginMessage(res: any, message: any) {
-  res.write(JSON.stringify(message) + "\n");
-}
-
 function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -55,7 +50,7 @@ app.get("/api/progressive-chunk", async (req, res) => {
       staticData: "Loaded!",
       counters: { loginCount: loginCountRef, postsCount: postsCountRef },
       customData: customDataRef,
-    })
+    }),
   );
   await wait(150);
 
@@ -70,7 +65,7 @@ app.get("/api/progressive-chunk", async (req, res) => {
       { id: 1, title: "First Post", content: "Hello world!" },
       { id: 2, title: "Second Post", content: "Another post." },
       thirdPostRef,
-    ])
+    ]),
   );
 
   await wait(150);
@@ -84,7 +79,7 @@ app.get("/api/progressive-chunk", async (req, res) => {
       title: "Third Post",
       content: "More content here.",
       items: itemsRef,
-    })
+    }),
   );
   await wait(50);
 
@@ -112,8 +107,8 @@ app.get("/api/progressive-chunk", async (req, res) => {
   writer(
     concat(
       itemsRef,
-      Array.from({ length: 1 }, (_, i) => createNewItem(i + 4))
-    )
+      Array.from({ length: 1 }, (_, i) => createNewItem(i + 4)),
+    ),
   );
 
   // Plugin system demonstrations
@@ -126,31 +121,29 @@ app.get("/api/progressive-chunk", async (req, res) => {
   await wait(150);
 
   // Use increment plugin to increment counters
-  writePluginMessage(res, increment(loginCountRef));
+  writer(increment(loginCountRef));
   await wait(150);
 
-  writePluginMessage(res, increment(postsCountRef, 3)); // Increment by 3
+  writer(increment(postsCountRef, 3)); // Increment by 3
   await wait(150);
 
   // Use merge plugin to add user properties progressively
-  writePluginMessage(res, merge(userNameRef, { email: "alice@example.com", verified: true }));
+  writer(merge(userNameRef, { email: "alice@example.com", verified: true }));
   await wait(150);
 
-  writePluginMessage(
-    res,
+  writer(
     merge(userNameRef, {
       lastLogin: new Date().toISOString(),
       preferences: { theme: "dark", notifications: true },
-    })
+    }),
   );
   await wait(150);
 
   // Use custom plugin
-  writePluginMessage(
-    res,
+  write(
     custom(customDataRef, "Hello from custom plugin!", {
       timestamp: new Date().toISOString(),
-    })
+    }),
   );
   await wait(150);
 

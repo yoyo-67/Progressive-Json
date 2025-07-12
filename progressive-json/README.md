@@ -212,12 +212,7 @@ function custom(key: string, value: string, metadata?: { timestamp: string }) {
   return { type: "custom", key, value, metadata };
 }
 
-// 2. Create a custom writer that handles plugin messages
-function writePluginMessage(res: any, message: any) {
-  res.write(JSON.stringify(message) + "\n");
-}
-
-// 3. Use in your server endpoint
+// 2. Use in your server endpoint
 app.get("/api/custom-plugin", async (req, res) => {
   writeChunkHeaders(res);
   const writer = writeln(res);
@@ -228,7 +223,7 @@ app.get("/api/custom-plugin", async (req, res) => {
   writer(init({ customData: customDataRef }));
   
   // Send custom plugin message
-  writePluginMessage(res, custom(customDataRef, "Hello from custom plugin!", {
+  writer(res, custom(customDataRef, "Hello from custom plugin!", {
     timestamp: new Date().toISOString(),
   }));
   
@@ -267,7 +262,7 @@ function custom(key: string, value: string, metadata?: { timestamp: string }) {
 }
 
 // Usage in server
-writePluginMessage(res, custom(myRef, "Custom data", { 
+writer(custom(myRef, "Custom data", { 
   timestamp: new Date().toISOString() 
 }));
 ```
