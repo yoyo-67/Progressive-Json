@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.3.1](https://github.com/yoyo-67/progressive-json/compare/@yoyo-org/progressive-json@0.3.0...@yoyo-org/progressive-json@0.3.1) (2025-07-12)
+
+**Note:** Version bump only for package @yoyo-org/progressive-json
+
+
+
+
+
 # [0.3.0](https://github.com/yoyo-67/progressive-json/compare/@yoyo-org/progressive-json@0.2.0...@yoyo-org/progressive-json@0.3.0) (2025-07-11)
 
 
