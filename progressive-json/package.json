@@ -2,10 +2,17 @@
   "name": "@yoyo-org/progressive-json",
   "version": "0.3.3",
   "description": "Stream and render JSON data as it arrives - perfect for AI responses, large datasets, and real-time updates",
-  "main": "dist/src/index.js",
-  "types": "dist/src/index.d.ts",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "default": "./dist/src/index.js"
+    }
+  },
   "files": [
     "dist",
+    "src",
     "README.md"
   ],
   "scripts": {

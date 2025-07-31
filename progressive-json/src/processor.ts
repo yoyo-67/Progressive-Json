@@ -7,17 +7,25 @@ import type {
   PluginContext,
 } from "./resolve-placeholder";
 import { filterPlaceholders } from "./utils/filter-placeholders";
-import { findPlaceholders, RefPathMap, PlaceholderPath } from "./utils/find-placeholders";
+import {
+  findPlaceholders,
+  RefPathMap,
+  PlaceholderPath,
+} from "./utils/find-placeholders";
 import { isPlaceholder } from "./utils/is-placeholder";
 import { produce } from "immer";
 
 export class Processor<T extends PlaceholderStore = PlaceholderStore> {
   private store: T | undefined;
+  private transformedStore: T | undefined;
+  private selectedStore: Partial<T> | undefined;
   private options: StreamProcessorOptions<T>;
   private decoder = new TextDecoder();
   private listeners: Array<() => void> = [];
   private refStore: RefPathMap = {};
   private plugins: Plugin<any, any>[] = [];
+  private isStreaming = false;
+  private streamError: Error | null = null;
 
   constructor(options: StreamProcessorOptions<T>) {
     this.options = options;
@@ -26,19 +34,78 @@ export class Processor<T extends PlaceholderStore = PlaceholderStore> {
 
     if (this.store) {
       this.updateRefStore(this.store);
+      this.updateTransformedStore();
     }
 
-    fetchJson(options.url, this);
+    // Only start fetching if enabled is not explicitly set to false
+    if (options.enabled !== false && options.url) {
+      this.startStreaming();
+    }
+  }
+
+  private startStreaming() {
+    if (this.isStreaming) return;
+    
+    this.isStreaming = true;
+    this.streamError = null;
+    this.options.onStreamStart?.();
+    
+    try {
+      fetchJson(this.options.url, this);
+    } catch (error) {
+      this.handleStreamError(error as Error);
+    }
+  }
+
+  private handleStreamError(error: Error) {
+    this.isStreaming = false;
+    this.streamError = error;
+    this.options.onStreamError?.(error);
+    this.notifyListeners();
+  }
+
+  private updateTransformedStore() {
+    if (!this.store) {
+      this.transformedStore = undefined;
+      this.selectedStore = undefined;
+      return;
+    }
+
+    // Apply transform if provided
+    this.transformedStore = this.options.transform 
+      ? this.options.transform(this.store)
+      : this.store;
+
+    // Apply selector if provided
+    this.selectedStore = this.options.select 
+      ? this.options.select(this.transformedStore)
+      : this.transformedStore;
   }
 
   // --- Public API ---
 
   getStore(): T | undefined {
+    return this.selectedStore as T | undefined;
+  }
+
+  getRawStore(): T | undefined {
     return this.store;
+  }
+
+  getTransformedStore(): T | undefined {
+    return this.transformedStore;
   }
 
   getRefStore(): RefPathMap {
     return this.refStore;
+  }
+
+  isCurrentlyStreaming(): boolean {
+    return this.isStreaming;
+  }
+
+  getStreamError(): Error | null {
+    return this.streamError;
   }
 
   subscribe(listener: () => void): () => void {
@@ -48,6 +115,32 @@ export class Processor<T extends PlaceholderStore = PlaceholderStore> {
     };
   }
 
+  startFetching(): void {
+    if (this.options.url && this.options.enabled !== false) {
+      this.startStreaming();
+    }
+  }
+
+  updateOptions(newOptions: Partial<StreamProcessorOptions<T>>): void {
+    const oldEnabled = this.options.enabled;
+    const oldUrl = this.options.url;
+    this.options = { ...this.options, ...newOptions };
+
+    // Restart streaming if URL changed or enabled changed from false to true
+    if (
+      (oldEnabled === false && this.options.enabled !== false) ||
+      (oldUrl !== this.options.url && this.options.enabled !== false)
+    ) {
+      this.startStreaming();
+    }
+    
+    // Update transforms if store exists
+    if (this.store) {
+      this.updateTransformedStore();
+      this.notifyListeners();
+    }
+  }
+
   processChunk(chunk: Uint8Array): void {
     const text = this.decoder.decode(chunk, { stream: true });
     for (const line of text.split("\n")) {
@@ -55,8 +148,14 @@ export class Processor<T extends PlaceholderStore = PlaceholderStore> {
         this.store = {} as T;
       }
 
+      const prevStore = this.store;
       this.store = this.handleStreamLine(line, this.store);
-      this.notifyListeners();
+      
+      // Only update transformed store and notify if data actually changed
+      if (this.hasStoreChanged(prevStore, this.store)) {
+        this.updateTransformedStore();
+        this.notifyListeners();
+      }
     }
   }
 
@@ -64,6 +163,33 @@ export class Processor<T extends PlaceholderStore = PlaceholderStore> {
 
   private notifyListeners() {
     this.listeners.forEach((listener) => listener());
+  }
+
+  private hasStoreChanged(prev: T, next: T): boolean {
+    // Use custom compare function if provided
+    if (this.options.compare) {
+      return !this.options.compare(prev, next);
+    }
+    
+    // Default: simple reference equality
+    return prev !== next;
+  }
+
+  stop(): void {
+    this.isStreaming = false;
+    // Note: fetchJson implementation should handle abort signals
+  }
+
+  onStreamComplete(finalData: T): void {
+    this.isStreaming = false;
+    this.updateTransformedStore();
+    this.options.onStreamEnd?.(finalData);
+    this.notifyListeners();
+  }
+
+  destroy(): void {
+    this.stop();
+    this.listeners = [];
   }
 
   normalizeRefKey(key: string): string {
@@ -85,7 +211,10 @@ export class Processor<T extends PlaceholderStore = PlaceholderStore> {
   updateAtPath(
     store: T,
     key: string,
-    updater: (obj: Record<string | number, unknown>, lastKey: string | number) => void
+    updater: (
+      obj: Record<string | number, unknown>,
+      lastKey: string | number,
+    ) => void,
   ): T {
     const refKey = this.normalizeRefKey(key);
     const refId = this.getRefIdFromKey(refKey);
@@ -133,7 +262,10 @@ export class Processor<T extends PlaceholderStore = PlaceholderStore> {
 
   private applyStreamUpdate(store: T, key: string, value: string): T {
     return this.updateAtPath(store, key, (obj, lastKey) => {
-      if (typeof obj[lastKey] === "string" && isPlaceholder(obj[lastKey] as string)) {
+      if (
+        typeof obj[lastKey] === "string" &&
+        isPlaceholder(obj[lastKey] as string)
+      ) {
         obj[lastKey] = value;
       } else {
         obj[lastKey] = ((obj[lastKey] ?? "") as string) + value;
@@ -158,7 +290,11 @@ export class Processor<T extends PlaceholderStore = PlaceholderStore> {
           refStore: this.refStore,
         };
         // Type-safe dispatch: cast msg to the plugin's message type
-        updatedStore = (plugin.handleMessage as any)(msg, currentStore, context) as T;
+        updatedStore = (plugin.handleMessage as any)(
+          msg,
+          currentStore,
+          context,
+        ) as T;
       } else {
         // Handle built-in message types
         switch (msg.type) {
@@ -166,16 +302,32 @@ export class Processor<T extends PlaceholderStore = PlaceholderStore> {
             updatedStore = this.handleInit(msg.data as T);
             break;
           case "value":
-            updatedStore = this.applyRefUpdate(updatedStore, msg.key, msg.value);
+            updatedStore = this.applyRefUpdate(
+              updatedStore,
+              msg.key,
+              msg.value,
+            );
             break;
           case "text":
-            updatedStore = this.applyStreamUpdate(updatedStore, msg.key, String(msg.value));
+            updatedStore = this.applyStreamUpdate(
+              updatedStore,
+              msg.key,
+              String(msg.value),
+            );
             break;
           case "push":
-            updatedStore = this.applyPushUpdate(updatedStore, msg.key, msg.value);
+            updatedStore = this.applyPushUpdate(
+              updatedStore,
+              msg.key,
+              msg.value,
+            );
             break;
           case "concat":
-            updatedStore = this.applyConcatUpdate(updatedStore, msg.key, msg.value as unknown[]);
+            updatedStore = this.applyConcatUpdate(
+              updatedStore,
+              msg.key,
+              msg.value as unknown[],
+            );
             break;
         }
       }

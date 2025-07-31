@@ -34,9 +34,27 @@ interface ProgressiveChunkOptions {
 export interface StreamProcessorOptions<T extends PlaceholderStore = PlaceholderStore>
   extends ProgressiveChunkOptions {
   url: string;
+  enabled?: boolean;
   initialStore?: T;
   onMessage?: (store: T) => void;
   plugins?: Plugin<any, any>[];
+  
+  // New: Declarative transforms
+  transform?: (rawData: T) => T;
+  
+  // New: Selective updates
+  select?: (data: T) => Partial<T>;
+  
+  // New: Built-in change detection
+  compare?: (prev: T, next: T) => boolean;
+  
+  // New: Streaming lifecycle hooks
+  onStreamStart?: () => void;
+  onStreamEnd?: (data: T) => void;
+  onStreamError?: (error: Error) => void;
+  
+  // New: Partial update handlers
+  onPartialUpdate?: (path: string[], value: any) => void;
 }
 
 export type PlaceholderStore<T = unknown> = Record<string, T>;
