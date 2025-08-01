@@ -43,7 +43,7 @@ export class Processor<T extends PlaceholderStore = PlaceholderStore> {
     }
   }
 
-  private startStreaming() {
+  private async startStreaming() {
     if (this.isStreaming) return;
     
     this.isStreaming = true;
@@ -51,13 +51,18 @@ export class Processor<T extends PlaceholderStore = PlaceholderStore> {
     this.options.onStreamStart?.();
     
     try {
-      fetchJson(this.options.url, this);
+      // Use custom fetch function if provided, otherwise use default
+      if (this.options.customFetch) {
+        await this.options.customFetch(this.options.url, this, this.options);
+      } else {
+        await fetchJson(this.options.url, this);
+      }
     } catch (error) {
-      this.handleStreamError(error as Error);
+      this.doHandleStreamError(error as Error);
     }
   }
 
-  private handleStreamError(error: Error) {
+  private doHandleStreamError(error: Error) {
     this.isStreaming = false;
     this.streamError = error;
     this.options.onStreamError?.(error);
@@ -177,6 +182,11 @@ export class Processor<T extends PlaceholderStore = PlaceholderStore> {
 
   stop(): void {
     this.isStreaming = false;
+    // Cleanup SSE connection if exists
+    if ((this as any)._sseCleanup) {
+      (this as any)._sseCleanup();
+      delete (this as any)._sseCleanup;
+    }
     // Note: fetchJson implementation should handle abort signals
   }
 
@@ -185,6 +195,10 @@ export class Processor<T extends PlaceholderStore = PlaceholderStore> {
     this.updateTransformedStore();
     this.options.onStreamEnd?.(finalData);
     this.notifyListeners();
+  }
+
+  handleStreamError(error: Error): void {
+    this.doHandleStreamError(error);
   }
 
   destroy(): void {

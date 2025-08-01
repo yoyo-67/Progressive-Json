@@ -53,6 +53,12 @@ export interface StreamProcessorOptions<T extends PlaceholderStore = Placeholder
   onStreamEnd?: (data: T) => void;
   onStreamError?: (error: Error) => void;
   
+  // New: Custom fetch function for different transports (SSE, WebSocket, etc)
+  customFetch?: (url: string, processor: any, options: StreamProcessorOptions<T>) => Promise<void>;
+  
+  // New: Auth token provider for SSE
+  getAuthToken?: () => Promise<string | null>;
+  
   // New: Partial update handlers
   onPartialUpdate?: (path: string[], value: any) => void;
 }
