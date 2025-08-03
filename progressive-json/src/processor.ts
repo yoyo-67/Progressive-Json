@@ -45,11 +45,11 @@ export class Processor<T extends PlaceholderStore = PlaceholderStore> {
 
   private async startStreaming() {
     if (this.isStreaming) return;
-    
+
     this.isStreaming = true;
     this.streamError = null;
     this.options.onStreamStart?.();
-    
+
     try {
       // Use custom fetch function if provided, otherwise use default
       if (this.options.customFetch) {
@@ -77,12 +77,12 @@ export class Processor<T extends PlaceholderStore = PlaceholderStore> {
     }
 
     // Apply transform if provided
-    this.transformedStore = this.options.transform 
+    this.transformedStore = this.options.transform
       ? this.options.transform(this.store)
       : this.store;
 
     // Apply selector if provided
-    this.selectedStore = this.options.select 
+    this.selectedStore = this.options.select
       ? this.options.select(this.transformedStore)
       : this.transformedStore;
   }
@@ -138,7 +138,7 @@ export class Processor<T extends PlaceholderStore = PlaceholderStore> {
     ) {
       this.startStreaming();
     }
-    
+
     // Update transforms if store exists
     if (this.store) {
       this.updateTransformedStore();
@@ -155,7 +155,7 @@ export class Processor<T extends PlaceholderStore = PlaceholderStore> {
 
       const prevStore = this.store;
       this.store = this.handleStreamLine(line, this.store);
-      
+
       // Only update transformed store and notify if data actually changed
       if (this.hasStoreChanged(prevStore, this.store)) {
         this.updateTransformedStore();
@@ -175,7 +175,7 @@ export class Processor<T extends PlaceholderStore = PlaceholderStore> {
     if (this.options.compare) {
       return !this.options.compare(prev, next);
     }
-    
+
     // Default: simple reference equality
     return prev !== next;
   }
